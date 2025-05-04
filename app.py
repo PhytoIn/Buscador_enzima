@@ -3,14 +3,22 @@ import fitz  # PyMuPDF
 import re
 import io
 
-def marcar_nomes(text):
-    # Passo 1: Substituir padrões de início de nome (números seguidos de . )
+
+def marcar_nomes_em_duas_etapas(text):
+    # --- Passo 1: Marca início dos nomes com '@nome' ---
     text = re.sub(r' \d{1,3}\. ', ' @nome ', text)
     text = re.sub(r' \d{1,3}\.\n', ' @nome\n', text)
     text = re.sub(r'\n\d{1,3}\. ', '\n@nome ', text)
 
-    # Passo 2: Substituir padrões como '. $$' pelo final do nome
-    text = re.sub(r'\. [A-Z][a-z]', '@fim_nome ', text, count=1)
+    # --- Passo 2: Para cada '@nome', substitui o primeiro '. [A-Z]' por '@fim_nome' ---
+    def marcar_fim(match_block):
+        bloco = match_block.group(0)
+        # Substitui apenas o primeiro '. [A-Z]' por '@fim_nome'
+        bloco_modificado = re.sub(r'\.\s([A-Z])', ' @fim_nome \\1', bloco, count=1)
+        return bloco_modificado
+
+    # Procura blocos começando com '@nome' até o primeiro '. [A-Z]' (sem pular para outros blocos)
+    text = re.sub(r'(@nome[^\n]*?)(?=\.\s[A-Z])', marcar_fim, text, flags=re.DOTALL)
 
     return text
 
@@ -37,26 +45,6 @@ if uploaded_file is not None:
     cleaned_text = raw_text.replace('\n', ' ')
 
     # Marcar nomes conforme os padrões definidos
-    marked_text = marcar_nomes(cleaned_text)
+    marked_text = marcar_nomes_em_duas_etapas(cleaned_text)
 
     # Garantir codificação UTF-8
-    text_bytes = marked_text.encode("utf-8")
-
-    # Criar buffer para download
-    txt_buffer = io.BytesIO(text_bytes)
-
-    # Botão para download
-    st.success("Texto extraído e marcado com sucesso!")
-    st.download_button(
-        label="📥 Baixar texto como .txt",
-        data=txt_buffer,
-        file_name="texto_marcado.txt",
-        mime="text/plain"
-    )
-
-    # Mostrar preview do texto
-    with st.expander("👁️ Visualizar início do texto"):
-        st.text(marked_text[:2000] + "..." if len(marked_text) > 2000 else marked_text)
-
-else:
-    st.warning("Por favor, envie um arquivo PDF.")
