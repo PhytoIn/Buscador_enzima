@@ -4,9 +4,11 @@ import re
 import io
 
 def marcar_inicio_nome(text):
+    """Marca o início dos nomes com '@nome' após numeração (ex: '1. ')"""
     return re.sub(r'\b\d+\.\s*', '@nome', text)
 
 def marcar_fim_nome_apos_inicio(text):
+    """Marca o fim dos nomes após padrões como '. Palavra' ou '. 2020'"""
     end_pattern = re.compile(r'\.\s([A-Z][a-zA-Z]{2,}|\d{4})')
     start_idx = 0
     result = []
@@ -34,66 +36,66 @@ def marcar_fim_nome_apos_inicio(text):
     return ''.join(result)
 
 def formatar_quebras_paragrafo(text):
-    # Lista de padrões para substituição com prioridade
-    padroes = [
-        (r'@nome', '\n'),                    # Início do nome
-        (r'@fim_nome', '\n'),                # Fim do nome
-        (r'Integrantes:\s*', '\n'),          # Seção de integrantes
-        (r'Integrante\b\s*', '\n'),          # Itens de lista
-        (r'Coordenador\b\s*', '\n'),         # Cargo
-        (r'\s\/\s', '\n'),                   # Separador com espaços
-        (r';\s*', '\n'),                     # Ponto-e-vírgula
-        (r'In:\s*', '\n'),                   # Indicador de publicação
-        (r'\.\s*\(Org\.\)\s*', '\n'),        # Organizador com ponto
-        (r'\(Org\.\)\s*', '\n')              # Organizador sem ponto
+    """Substitui marcadores por quebras de parágrafo"""
+    substituicoes = [
+        (r'@nome', '\n'),                    # Quebra antes do nome
+        (r'@fim_nome', '\n'),                # Quebra após o nome
+        (r'Integrantes:', '\nIntegrantes:\n'),  # Seção com quebra dupla
+        (r'\bIntegrante\b', '\n• '),         # Itens de lista com marcador
+        (r'\bCoordenador\b', '\nCoordenador:\n'),
+        (r'\s/\s', '\n'),                    # Barra como separador
+        (r';', '\n'),                        # Ponto-e-vírgula
+        (r'In:', '\nPublicado em:\n'),       # Título descritivo
+        (r'\.\s*\(Org\.\)', '\n(Organizador)\n'),
+        (r'\(Org\.\)', '\n(Organizador)\n')
     ]
     
-    # Aplicar substituições em ordem
-    for padrao, substituicao in padroes:
+    for padrao, substituicao in substituicoes:
         text = re.sub(padrao, substituicao, text)
     
-    # Limpar espaços e quebras múltiplas
-    text = re.sub(r'\s+', ' ', text)          # Remove espaços extras
-    text = re.sub(r'\n\s*', '\n', text)       # Remove espaços após quebras
-    text = re.sub(r'\n{3,}', '\n\n', text)    # Limita para 2 quebras consecutivas
+    # Pós-processamento
+    text = re.sub(r' +', ' ', text)          # Remove espaços múltiplos
+    text = re.sub(r'\n ', '\n', text)        # Remove espaços após quebras
+    text = re.sub(r'\n{3,}', '\n\n', text)   # Limita a 2 quebras consecutivas
     
     return text.strip()
 
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
-st.subheader("Faça upload de um PDF e baixe o texto extraído em formato .txt")
+st.subheader("Faça upload de um PDF e baixe o texto formatado")
 
 uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
 
 if uploaded_file is not None:
-    st.info("Processando com PyMuPDF...")
-
+    st.info("Processando PDF...")
+    
     try:
+        # Extração do texto
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-        raw_text = "".join([page.get_text() + "\n" for page in doc])
-        cleaned_text = raw_text.replace('\n', ' ')
+        raw_text = "".join(page.get_text() + "\n" for page in doc)
+        cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normaliza espaços
 
         # Processamento em 3 etapas
-        texto_marcado = marcar_fim_nome_apos_inicio(marcar_inicio_nome(cleaned_text))
-        texto_formatado = formatar_quebras_paragrafo(texto_marcado)
+        texto_marcado = marcar_inicio_nome(cleaned_text)
+        texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
+        texto_final = formatar_quebras_paragrafo(texto_marcado)
 
-        # Preparar para download
-        txt_buffer = io.BytesIO(texto_formatado.encode("utf-8"))
-        
-        st.success("Texto processado com sucesso!")
+        # Download
+        txt_buffer = io.BytesIO(texto_final.encode('utf-8'))
+        st.success("Pronto para download!")
         st.download_button(
-            label="📥 Baixar texto formatado",
+            label="⬇️ Baixar texto formatado",
             data=txt_buffer,
-            file_name="curriculo_formatado.txt",
+            file_name="texto_formatado.txt",
             mime="text/plain"
         )
 
-        with st.expander("🔍 Visualizar texto formatado"):
-            st.text(texto_formatado[:2000] + ("..." if len(texto_formatado) > 2000 else ""))
+        # Visualização
+        with st.expander("🔍 Pré-visualização (primeiras 2000 caracteres)"):
+            st.text(texto_final[:2000] + ("..." if len(texto_final) > 2000 else ""))
 
     except Exception as e:
-        st.error(f"Erro no processamento: {str(e)}")
-
+        st.error(f"Erro: {str(e)}")
 else:
     st.warning("Por favor, carregue um arquivo PDF.")
