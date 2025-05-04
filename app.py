@@ -1,6 +1,19 @@
 import streamlit as st
 import fitz  # PyMuPDF
+import re
 import io
+
+def marcar_nomes(text):
+    # Passo 1: Substituir padrões de início de nome (números seguidos de . )
+    text = re.sub(r' \d{1,3}\. ', ' @nome ', text)
+    text = re.sub(r' \d{1,3}\.\n', ' @nome\n', text)
+    text = re.sub(r'\n\d{1,3}\. ', '\n@nome ', text)
+
+    # Passo 2: Substituir padrões como '. $$' pelo final do nome
+    text = re.sub(r'\. [A-Z][a-z]', '@fim_nome ', text, count=1)
+
+    return text
+
 
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
@@ -20,27 +33,30 @@ if uploaded_file is not None:
     for page in doc:
         raw_text += page.get_text() + "\n"
 
-    # Substituir quebras de linha por espaço (substitui múltiplas quebras também)
+    # Substituir quebras de linha por espaço
     cleaned_text = raw_text.replace('\n', ' ')
 
+    # Marcar nomes conforme os padrões definidos
+    marked_text = marcar_nomes(cleaned_text)
+
     # Garantir codificação UTF-8
-    text_bytes = cleaned_text.encode("utf-8")
+    text_bytes = marked_text.encode("utf-8")
 
     # Criar buffer para download
     txt_buffer = io.BytesIO(text_bytes)
 
     # Botão para download
-    st.success("Texto extraído e limpo com sucesso!")
+    st.success("Texto extraído e marcado com sucesso!")
     st.download_button(
         label="📥 Baixar texto como .txt",
         data=txt_buffer,
-        file_name="texto_extraido_limpo.txt",
+        file_name="texto_marcado.txt",
         mime="text/plain"
     )
 
     # Mostrar preview do texto
     with st.expander("👁️ Visualizar início do texto"):
-        st.text(cleaned_text[:2000] + "..." if len(cleaned_text) > 2000 else cleaned_text)
+        st.text(marked_text[:2000] + "..." if len(marked_text) > 2000 else marked_text)
 
 else:
     st.warning("Por favor, envie um arquivo PDF.")
