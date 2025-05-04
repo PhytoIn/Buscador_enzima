@@ -10,43 +10,49 @@ def marcar_inicio_nome(text):
 
 
 def marcar_fim_nome_apos_inicio(text):
-    # Padrão combinado: ". XX" onde X pode ser maiúscula ou minúscula, ou ". ####"
-    end_pattern = re.compile(r'\.\s([A-Za-z][A-Za-z]|\d{4})')
+    # Padrão refinado: ". Palavra" ou ". 2020"
+    # Apenas palavras com inicial maiúscula ou anos com 4 dígitos
+    end_pattern = re.compile(r'\.\s([A-Z][a-zA-Z]{1,}|\d{4})')
 
     start_idx = 0
     result = []
 
     while True:
-        # Encontra próximo '@nome'
+        # Encontrar próximo '@nome'
         start_match = re.search('@nome', text[start_idx:])
         if not start_match:
             break
 
         start_pos = start_idx + start_match.start()
 
-        # Procura o fim do nome após @nome
-        end_match = end_pattern.search(text[start_pos:])
-        if end_match:
-            end_pos = start_pos + end_match.end()
+        # Buscar o primeiro padrão '. Palavra' ou '. 2020' após '@nome'
+        match = end_pattern.search(text[start_pos:])
+        if match:
+            pattern_start_global = start_pos + match.start()
+            pattern_end_global = start_pos + match.end()
 
-            # Adicionar partes do texto até o '@fim_nome'
-            result.append(text[start_idx:start_pos])          # Texto antes do @nome
-            result.append('@nome')                            # Inserção explícita
-            result.append(text[start_pos + 5:end_pos - 1])    # Nome sem o . XX ou . ####
-            result.append(' @fim_nome')                      # Fim da marcação
+            # Adicionar texto até '@nome'
+            result.append(text[start_idx:start_pos])
 
-            start_idx = end_pos  # Atualiza índice
+            # Adicionar '@nome...@fim_nome'
+            result.append('@nome')
+            result.append(text[start_pos + 5:pattern_start_global])  # Conteúdo entre '@nome' e padrão
+            result.append('@fim_nome')
+
+            # Continuar processando depois do padrão encontrado
+            start_idx = pattern_end_global
         else:
-            # Se não encontrar, adicionar até o final
+            # Se não encontrar mais padrões, adicionar até o final
             result.append(text[start_idx:start_pos])
             result.append('@nome')
             start_idx = len(text)
 
-    # Adiciona o restante do texto
+    # Adicionar o restante do texto
     result.append(text[start_idx:])
     return ''.join(result)
 
 
+# Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
 st.subheader("Faça upload de um PDF e baixe o texto extraído em formato .txt")
@@ -72,10 +78,10 @@ if uploaded_file is not None:
         # Passo 1: Marcar início dos nomes
         marked_start_text = marcar_inicio_nome(cleaned_text)
 
-        # Passo 2: Marcar fim dos nomes baseado no primeiro '. $$' ou '. ####'
+        # Passo 2: Marcar fim dos nomes com base no novo padrão refinado
         marked_text = marcar_fim_nome_apos_inicio(marked_start_text)
 
-        # Garantir codificação UTF-8
+        # Garantir codificação UTF-8 para download
         text_bytes = marked_text.encode("utf-8")
 
         # Criar buffer para download
