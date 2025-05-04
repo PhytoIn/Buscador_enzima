@@ -5,49 +5,46 @@ import io
 
 
 def marcar_inicio_nome(text):
-    # Marca início dos nomes com '@nome'
-    text = re.sub(r' \d{1,3}\. ', ' @nome', text)
-    text = re.sub(r' \d{1,3}\.\n', ' @nome\n', text)
-    text = re.sub(r'\n\d{1,3}\. ', '\n@nome', text)
-    return text
+    # Marca início dos nomes com '@nome' após numeração como "1. ", "2. ", etc.
+    return re.sub(r'\b\d+\.\s*', '@nome', text)
 
 
 def marcar_fim_nome_apos_inicio(text):
-    # Encontra todos os pontos com duas letras maiúsculas: ". SP", ". II", ". BR"
-    pattern = re.compile(r'(\.[\s][A-Z][A-Z])')
+    # Padrão combinado: ". XX" onde X pode ser maiúscula ou minúscula, ou ". ####"
+    end_pattern = re.compile(r'\.\s([A-Za-z][A-Za-z]|\d{4})')
 
-    # Procura todos os "@nome" e seus posições
-    nome_positions = [m.start() for m in re.finditer('@nome', text)]
+    start_idx = 0
+    result = []
 
-    # Lista para armazenar os novos cortes
-    new_text_parts = []
-    last_pos = 0
+    while True:
+        # Encontra próximo '@nome'
+        start_match = re.search('@nome', text[start_idx:])
+        if not start_match:
+            break
 
-    for start_pos in nome_positions:
-        # Pegar parte do texto após esse '@nome'
-        subtext = text[start_pos:]
+        start_pos = start_idx + start_match.start()
 
-        # Encontrar o primeiro '. $$' nessa parte
-        match = pattern.search(subtext)
+        # Procura o fim do nome após @nome
+        end_match = end_pattern.search(text[start_pos:])
+        if end_match:
+            end_pos = start_pos + end_match.end()
 
-        if match:
-            end_pos_in_sub = match.end()
-            end_pos_global = start_pos + end_pos_in_sub
+            # Adicionar partes do texto até o '@fim_nome'
+            result.append(text[start_idx:start_pos])          # Texto antes do @nome
+            result.append('@nome')                            # Inserção explícita
+            result.append(text[start_pos + 5:end_pos - 1])    # Nome sem o . XX ou . ####
+            result.append(' @fim_nome')                      # Fim da marcação
 
-            # Adicionar parte antes do '. $$' + '@fim_nome'
-            new_text_parts.append(text[last_pos:start_pos])
-            new_text_parts.append('@nome')
-            new_text_parts.append(text[start_pos + 5:end_pos_global - 1])  # pega nome até antes do ponto
-            new_text_parts.append(' @fim_nome')
-
-            last_pos = end_pos_global
+            start_idx = end_pos  # Atualiza índice
         else:
-            # Se não encontrar '. $$', apenas continua
-            continue
+            # Se não encontrar, adicionar até o final
+            result.append(text[start_idx:start_pos])
+            result.append('@nome')
+            start_idx = len(text)
 
     # Adiciona o restante do texto
-    new_text_parts.append(text[last_pos:])
-    return ''.join(new_text_parts)
+    result.append(text[start_idx:])
+    return ''.join(result)
 
 
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
@@ -75,7 +72,7 @@ if uploaded_file is not None:
         # Passo 1: Marcar início dos nomes
         marked_start_text = marcar_inicio_nome(cleaned_text)
 
-        # Passo 2: Marcar fim dos nomes baseado no primeiro '. $$' após '@nome'
+        # Passo 2: Marcar fim dos nomes baseado no primeiro '. $$' ou '. ####'
         marked_text = marcar_fim_nome_apos_inicio(marked_start_text)
 
         # Garantir codificação UTF-8
@@ -95,7 +92,7 @@ if uploaded_file is not None:
 
         # Mostrar preview do texto
         with st.expander("👁️ Visualizar início do texto"):
-            st.text(marked_text[:2000] + "..." if len(marked_text) > 2000 else marked_text)
+            st.text_area("", value=marked_text[:2000] + ("..." if len(marked_text) > 2000 else ""), height=300)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao processar o arquivo: {str(e)}")
