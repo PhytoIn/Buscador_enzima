@@ -20,24 +20,27 @@ if uploaded_file is not None:
     for page in doc:
         raw_text += page.get_text() + "\n"
 
+    # Substituir quebras de linha por espaço (substitui múltiplas quebras também)
+    cleaned_text = raw_text.replace('\n', ' ')
+
     # Garantir codificação UTF-8
-    text_bytes = raw_text.encode("utf-8")
+    text_bytes = cleaned_text.encode("utf-8")
 
     # Criar buffer para download
     txt_buffer = io.BytesIO(text_bytes)
 
     # Botão para download
-    st.success("Texto extraído com sucesso!")
+    st.success("Texto extraído e limpo com sucesso!")
     st.download_button(
         label="📥 Baixar texto como .txt",
         data=txt_buffer,
-        file_name="texto_extraido_pymupdf.txt",
+        file_name="texto_extraido_limpo.txt",
         mime="text/plain"
     )
 
     # Mostrar preview do texto
     with st.expander("👁️ Visualizar início do texto"):
-        st.text(raw_text[:2000] + "..." if len(raw_text) > 2000 else raw_text)
+        st.text(cleaned_text[:2000] + "..." if len(cleaned_text) > 2000 else cleaned_text)
 
 else:
     st.warning("Por favor, envie um arquivo PDF.")
