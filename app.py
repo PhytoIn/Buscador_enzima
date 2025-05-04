@@ -47,32 +47,6 @@ def marcar_fim_nome_apos_inicio(text):
     result.append(text[start_idx:])
     return ''.join(result)
 
-def adicionar_quebras_paragrafo(text):
-    # Lista de padrões para substituir por quebras de parágrafo (ordem é importante)
-    padroes = [
-        r'@nome',              # Marcador de início de nome
-        r'@fim_nome',          # Marcador de fim de nome
-        r'Integrantes:\s*',    # Título de seção
-        r'Integrante\b\s*',    # Item de lista
-        r'Coordenador\b\s*',   # Cargo
-        r'\s\/\s',             # Barra com espaços
-        r'\s\.\s',             # Espaço + ponto + espaço
-        r';\s*',               # Ponto e vírgula
-        r'In:\s*',             # Indicador de publicação
-        r'\.\s*\(Org\.\)\s*', # Organizador com ponto
-        r'\(Org\.\)\s*'       # Organizador sem ponto
-    ]
-    
-    # Substituir cada padrão por uma quebra de linha
-    for padrao in padroes:
-        text = re.sub(padrao, '\n', text)
-    
-    # Remover múltiplas quebras de linha consecutivas e espaços extras
-    text = re.sub(r'\n\s+', '\n', text)  # Remove espaços após quebras
-    text = re.sub(r'\n+', '\n\n', text)  # Garante no máximo 2 quebras consecutivas
-    
-    return text.strip()
-
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
@@ -93,30 +67,26 @@ if uploaded_file is not None:
 
         cleaned_text = raw_text.replace('\n', ' ')
 
-        # Passo 1: Marcar nomes
         marked_start_text = marcar_inicio_nome(cleaned_text)
         marked_text = marcar_fim_nome_apos_inicio(marked_start_text)
 
-        # Passo 2: Adicionar quebras de parágrafo
-        final_text = adicionar_quebras_paragrafo(marked_text)
-
-        # Preparar para download
-        text_bytes = final_text.encode("utf-8")
+        text_bytes = marked_text.encode("utf-8")
         txt_buffer = io.BytesIO(text_bytes)
 
-        st.success("Texto extraído e formatado com sucesso!")
+        st.success("Texto extraído e marcado com sucesso!")
         st.download_button(
             label="📥 Baixar texto como .txt",
             data=txt_buffer,
-            file_name="texto_formatado.txt",
+            file_name="texto_marcado.txt",
             mime="text/plain"
         )
 
         with st.expander("👁️ Visualizar início do texto"):
-            st.text_area("", value=final_text[:2000] + ("..." if len(final_text) > 2000 else ""), height=300)
+            st.text_area("", value=marked_text[:2000] + ("..." if len(marked_text) > 2000 else ""), height=300)
 
     except Exception as e:
         st.error(f"Ocorreu um erro ao processar o arquivo: {str(e)}")
 
 else:
     st.warning("Por favor, envie um arquivo PDF.")
+
