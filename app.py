@@ -83,7 +83,7 @@ def limpar_texto(text):
             continue
             
         # Regra 5 (ATUALIZADA): Remove espaços e hífens no final de TODOS os parágrafos
-        linha = re.sub(r'[\s-]+$', '', linha)  # Aplica a todos!
+        linha = re.sub(r'[-\s]+$', '', linha)  # Agora prioriza hífens
             
         linhas_limpas.append(linha)
     
