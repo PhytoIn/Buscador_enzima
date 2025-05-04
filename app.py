@@ -8,8 +8,8 @@ def marcar_inicio_nome(text):
     return re.sub(r'\b\d+\.\s*', '@nome', text)
 
 def marcar_fim_nome_apos_inicio(text):
-    """Marca o fim dos nomes após padrões como '. Palavra' ou '. 2020'"""
-    end_pattern = re.compile(r'\.\s([A-Z][a-zA-Z]{2,}|\d{4})')
+    """Marca o fim dos nomes após padrões como '. Palavra' (incluindo acentos) ou '. 2020'"""
+    end_pattern = re.compile(r'\.\s([A-ZÀ-Ú][a-zA-ZÀ-ú]{2,}|\d{4})')  # Inclui acentos
     start_idx = 0
     result = []
 
