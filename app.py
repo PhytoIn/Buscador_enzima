@@ -1,6 +1,7 @@
 import streamlit as st
 import fitz  # PyMuPDF
 import io
+import re
 
 def marcar_nomes_em_duas_etapas(text):
     # Passo 1: Marca início dos nomes com '@nome'
