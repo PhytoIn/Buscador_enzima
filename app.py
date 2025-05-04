@@ -9,7 +9,7 @@ def marcar_inicio_nome(text):
 
 def marcar_fim_nome_apos_inicio(text):
     """Marca o fim dos nomes após padrões como '. Palavra' (incluindo acentos) ou '. 2020'"""
-    end_pattern = re.compile(r'\.\s([A-ZÀ-Ú][a-zA-ZÀ-ú]{2,}|\d{4})')  # Inclui acentos
+    end_pattern = re.compile(r'\.\s([A-ZÀ-Ú][a-zA-ZÀ-ú]{2,}|\d{4})')
     start_idx = 0
     result = []
 
@@ -38,14 +38,14 @@ def marcar_fim_nome_apos_inicio(text):
 def formatar_quebras_paragrafo(text):
     """Substitui marcadores por quebras de parágrafo"""
     substituicoes = [
-        (r'@nome', '\n'),                    # Quebra antes do nome
-        (r'@fim_nome', '\n'),                # Quebra após o nome
-        (r'Integrantes:', '\nIntegrantes:\n'),  # Seção com quebra dupla
-        (r'\bIntegrante\b', '\n• '),         # Itens de lista com marcador
+        (r'@nome', '\n'),                   
+        (r'@fim_nome', '\n'),              
+        (r'Integrantes:', '\nIntegrantes:\n'),
+        (r'\bIntegrante\b', '\n• '),       
         (r'\bCoordenador\b', '\nCoordenador:\n'),
-        (r'\s/\s', '\n'),                    # Barra como separador
-        (r';', '\n'),                        # Ponto-e-vírgula
-        (r'In:', '\nPublicado em:\n'),       # Título descritivo
+        (r'\s/\s', '\n'),                  
+        (r';', '\n'),                      
+        (r'In:', '\nPublicado em:\n'),     
         (r'\.\s*\(Org\.\)', '\n(Organizador)\n'),
         (r'\(Org\.\)', '\n(Organizador)\n')
     ]
@@ -53,12 +53,42 @@ def formatar_quebras_paragrafo(text):
     for padrao, substituicao in substituicoes:
         text = re.sub(padrao, substituicao, text)
     
-    # Pós-processamento
-    text = re.sub(r' +', ' ', text)          # Remove espaços múltiplos
-    text = re.sub(r'\n ', '\n', text)        # Remove espaços após quebras
-    text = re.sub(r'\n{3,}', '\n\n', text)   # Limita a 2 quebras consecutivas
+    text = re.sub(r' +', ' ', text)         
+    text = re.sub(r'\n ', '\n', text)       
+    text = re.sub(r'\n{3,}', '\n\n', text)  
     
     return text.strip()
+
+def limpar_texto(text):
+    """Aplica todas as regras de limpeza especificadas"""
+    linhas_limpas = []
+    
+    for linha in text.split('\n'):
+        linha = linha.strip()
+        
+        # Regra 1: Remove parágrafos com números
+        if re.search(r'\d', linha):
+            continue
+            
+        # Regra 2: Remove parágrafos com dois pontos
+        if ':' in linha:
+            continue
+            
+        # Regra 3: Remove parágrafos com parênteses/colchetes/chaves
+        if re.search(r'[\(\)\{\}\[\]]', linha):
+            continue
+            
+        # Regra 4: Remove parágrafos com uma única palavra
+        if len(linha.split()) == 1:
+            continue
+            
+        # Regra 5: Remove espaços e hífens no final dos nomes
+        if '@nome' in linha or '@fim_nome' in linha:
+            linha = re.sub(r'[\s-]+$', '', linha)
+            
+        linhas_limpas.append(linha)
+    
+    return '\n'.join(linhas_limpas)
 
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
@@ -76,10 +106,11 @@ if uploaded_file is not None:
         raw_text = "".join(page.get_text() + "\n" for page in doc)
         cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normaliza espaços
 
-        # Processamento em 3 etapas
+        # Processamento em 4 etapas
         texto_marcado = marcar_inicio_nome(cleaned_text)
         texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
-        texto_final = formatar_quebras_paragrafo(texto_marcado)
+        texto_formatado = formatar_quebras_paragrafo(texto_marcado)
+        texto_final = limpar_texto(texto_formatado)  # Nova etapa de limpeza
 
         # Download
         txt_buffer = io.BytesIO(texto_final.encode('utf-8'))
