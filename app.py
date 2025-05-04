@@ -82,9 +82,8 @@ def limpar_texto(text):
         if len(linha.split()) == 1:
             continue
             
-        # Regra 5: Remove espaços e hífens no final dos nomes
-        if '@nome' in linha or '@fim_nome' in linha:
-            linha = re.sub(r'[\s-]+$', '', linha)
+        # Regra 5 (ATUALIZADA): Remove espaços e hífens no final de TODOS os parágrafos
+        linha = re.sub(r'[\s-]+$', '', linha)  # Aplica a todos!
             
         linhas_limpas.append(linha)
     
