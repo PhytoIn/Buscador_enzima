@@ -89,4 +89,3 @@ if uploaded_file is not None:
 
 else:
     st.warning("Por favor, envie um arquivo PDF.")
-
