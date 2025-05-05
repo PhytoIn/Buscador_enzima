@@ -70,7 +70,7 @@ def limpar_texto(text):
         if re.search(r'\d', linha):
             continue
             
-        # Regra 2: Remove parágrafos com dois pontos
+        # Regra 2: Remove parágrafos com dois pontos, interrogação ou exclamação
         if re.search(r'[:?!]', linha):
             continue
             
@@ -82,8 +82,12 @@ def limpar_texto(text):
         if len(linha.split()) == 1:
             continue
             
-        # Regra 5 (ATUALIZADA): Remove espaços e hífens no final de TODOS os parágrafos
-        linha = re.sub(r'[-\s]+$', '', linha)  # Agora prioriza hífens
+        # Regra 5: Remove parágrafos com 60 ou mais caracteres
+        if len(linha) >= 60:
+            continue
+            
+        # Regra 6: Remove espaços e hífens no final de TODOS os parágrafos
+        linha = re.sub(r'[-\s]+$', '', linha)
             
         linhas_limpas.append(linha)
     
