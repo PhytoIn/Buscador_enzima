@@ -2,6 +2,7 @@ import streamlit as st
 import fitz  # PyMuPDF
 import re
 import io
+import unicodedata
 
 def marcar_inicio_nome(text):
     """Marca o início dos nomes com '@nome' após numeração (ex: '1. ')"""
@@ -113,21 +114,26 @@ def ordenar_linhas_alfabeticamente(text):
     linhas_ordenadas = sorted(linhas, key=lambda x: x.lower())
     return '\n'.join(linhas_ordenadas)
 
+
 def normalizar_nomes(text):
-    """Padroniza nomes removendo caracteres especiais e espaços extras"""
+    """Padroniza nomes removendo acentos, caracteres especiais e espaços extras"""
     linhas_normalizadas = []
     
     for linha in text.split('\n'):
-        # Remove vírgulas, pontos, hífens e apóstrofos
-        linha_limpa = re.sub(r"[,.'-]", ' ', linha)
+        # Passo 1: Remover acentos e normalizar caracteres Unicode
+        linha = unicodedata.normalize('NFKD', linha)
+        linha = linha.encode('ASCII', 'ignore').decode('ASCII')  # Remove acentos
         
-        # Remove espaços múltiplos e espaços no início/fim
-        linha_limpa = re.sub(r'\s+', ' ', linha_limpa).strip()
+        # Passo 2: Remover caracteres especiais
+        linha = re.sub(r"[,.'\-]", ' ', linha)  # Hífens são removidos
         
-        linhas_normalizadas.append(linha_limpa)
+        # Passo 3: Normalizar espaços
+        linha = re.sub(r'\s+', ' ', linha).strip().upper()
+        
+        linhas_normalizadas.append(linha)
     
     return '\n'.join(linhas_normalizadas)
-
+    
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
