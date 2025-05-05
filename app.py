@@ -67,7 +67,7 @@ def limpar_texto(text):
         original = linha  # Guarda a versão original para verificação de comprimento
         linha = linha.strip()
         
-        # Regra 0 (NOVA): Remove parágrafos com 60+ caracteres (antes do strip)
+        # Regra 0: Remove parágrafos com 60+ caracteres (antes do strip)
         if len(original) >= 60:
             continue
             
@@ -113,7 +113,13 @@ def ordenar_linhas_alfabeticamente(text):
     linhas_ordenadas = sorted(linhas, key=lambda x: x.lower())
     return '\n'.join(linhas_ordenadas)
 
-# Interface Streamlit atualizada
+# Interface Streamlit
+st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
+st.title("📄 Extrair Texto de Arquivo PDF")
+st.subheader("Faça upload de um PDF e baixe o texto formatado")
+
+uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
+
 if uploaded_file is not None:
     st.info("Processando PDF...")
     
@@ -121,7 +127,7 @@ if uploaded_file is not None:
         # Extração do texto
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         raw_text = "".join(page.get_text() + "\n" for page in doc)
-        cleaned_text = re.sub(r'\s+', ' ', raw_text)
+        cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normaliza espaços
 
         # Processamento em 6 etapas
         texto_marcado = marcar_inicio_nome(cleaned_text)
@@ -137,15 +143,19 @@ if uploaded_file is not None:
         st.download_button(
             label="⬇️ Baixar texto formatado",
             data=txt_buffer,
-            file_name="texto_formatado.txt",
+            file_name="nomes_ordenados.txt",  # Nome mais descritivo
             mime="text/plain"
         )
 
         # Visualização
-        with st.expander("🔍 Pré-visualização (primeiras 2000 caracteres)"):
+        with st.expander("🔍 Visualizar lista de nomes (ordenada alfabeticamente)"):
             st.text(texto_final[:2000] + ("..." if len(texto_final) > 2000 else ""))
 
+        # Estatísticas
+        num_nomes = len(texto_final.split('\n'))
+        st.info(f"✅ Processamento concluído! Total de nomes únicos: {num_nomes}")
+
     except Exception as e:
-        st.error(f"Erro: {str(e)}")
+        st.error(f"Erro no processamento: {str(e)}")
 else:
     st.warning("Por favor, carregue um arquivo PDF.")
