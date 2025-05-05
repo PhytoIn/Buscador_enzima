@@ -64,17 +64,22 @@ def limpar_texto(text):
     linhas_limpas = []
     
     for linha in text.split('\n'):
+        original = linha  # Guarda a versão original para verificação de comprimento
         linha = linha.strip()
         
+        # Regra 0 (NOVA): Remove parágrafos com 60+ caracteres (antes do strip)
+        if len(original) >= 60:
+            continue
+            
         # Regra 1: Remove parágrafos com números
         if re.search(r'\d', linha):
             continue
             
-        # Regra 2: Remove parágrafos com dois pontos, interrogação ou exclamação
+        # Regra 2: Remove parágrafos com pontuação
         if re.search(r'[:?!]', linha):
             continue
             
-        # Regra 3: Remove parágrafos com parênteses/colchetes/chaves
+        # Regra 3: Remove parágrafos com parênteses/colchetes
         if re.search(r'[\(\)\{\}\[\]]', linha):
             continue
             
@@ -82,11 +87,7 @@ def limpar_texto(text):
         if len(linha.split()) == 1:
             continue
             
-        # Regra 5: Remove parágrafos com 60 ou mais caracteres
-        if len(linha) >= 60:
-            continue
-            
-        # Regra 6: Remove espaços e hífens no final de TODOS os parágrafos
+        # Regra 5: Remove espaços/hífens no final
         linha = re.sub(r'[-\s]+$', '', linha)
             
         linhas_limpas.append(linha)
