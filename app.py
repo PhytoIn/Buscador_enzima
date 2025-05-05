@@ -94,13 +94,26 @@ def limpar_texto(text):
     
     return '\n'.join(linhas_limpas)
 
-# Interface Streamlit
-st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
-st.title("📄 Extrair Texto de Arquivo PDF")
-st.subheader("Faça upload de um PDF e baixe o texto formatado")
+def remover_linhas_repetidas(text):
+    """Remove linhas duplicadas mantendo a primeira ocorrência"""
+    linhas_vistas = set()
+    linhas_unicas = []
+    
+    for linha in text.split('\n'):
+        linha_limpa = linha.strip()
+        if linha_limpa and linha_limpa not in linhas_vistas:
+            linhas_vistas.add(linha_limpa)
+            linhas_unicas.append(linha)
+    
+    return '\n'.join(linhas_unicas)
 
-uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
+def ordenar_linhas_alfabeticamente(text):
+    """Ordena as linhas em ordem alfabética, ignorando maiúsculas/minúsculas"""
+    linhas = [linha.strip() for linha in text.split('\n') if linha.strip()]
+    linhas_ordenadas = sorted(linhas, key=lambda x: x.lower())
+    return '\n'.join(linhas_ordenadas)
 
+# Interface Streamlit atualizada
 if uploaded_file is not None:
     st.info("Processando PDF...")
     
@@ -108,13 +121,15 @@ if uploaded_file is not None:
         # Extração do texto
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         raw_text = "".join(page.get_text() + "\n" for page in doc)
-        cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normaliza espaços
+        cleaned_text = re.sub(r'\s+', ' ', raw_text)
 
-        # Processamento em 4 etapas
+        # Processamento em 6 etapas
         texto_marcado = marcar_inicio_nome(cleaned_text)
         texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
         texto_formatado = formatar_quebras_paragrafo(texto_marcado)
-        texto_final = limpar_texto(texto_formatado)  # Nova etapa de limpeza
+        texto_limpo = limpar_texto(texto_formatado)
+        texto_sem_repeticao = remover_linhas_repetidas(texto_limpo)
+        texto_final = ordenar_linhas_alfabeticamente(texto_sem_repeticao)
 
         # Download
         txt_buffer = io.BytesIO(texto_final.encode('utf-8'))
