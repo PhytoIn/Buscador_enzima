@@ -113,6 +113,21 @@ def ordenar_linhas_alfabeticamente(text):
     linhas_ordenadas = sorted(linhas, key=lambda x: x.lower())
     return '\n'.join(linhas_ordenadas)
 
+def normalizar_nomes(text):
+    """Padroniza nomes removendo caracteres especiais e espaços extras"""
+    linhas_normalizadas = []
+    
+    for linha in text.split('\n'):
+        # Remove vírgulas, pontos, hífens e apóstrofos
+        linha_limpa = re.sub(r"[,.'-]", ' ', linha)
+        
+        # Remove espaços múltiplos e espaços no início/fim
+        linha_limpa = re.sub(r'\s+', ' ', linha_limpa).strip()
+        
+        linhas_normalizadas.append(linha_limpa)
+    
+    return '\n'.join(linhas_normalizadas)
+
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
@@ -120,6 +135,7 @@ st.subheader("Faça upload de um PDF e baixe o texto formatado")
 
 uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
 
+# Atualização no fluxo de processamento
 if uploaded_file is not None:
     st.info("Processando PDF...")
     
@@ -127,14 +143,15 @@ if uploaded_file is not None:
         # Extração do texto
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         raw_text = "".join(page.get_text() + "\n" for page in doc)
-        cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normaliza espaços
+        cleaned_text = re.sub(r'\s+', ' ', raw_text)
 
-        # Processamento em 6 etapas
+        # Processamento em 7 etapas
         texto_marcado = marcar_inicio_nome(cleaned_text)
         texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
         texto_formatado = formatar_quebras_paragrafo(texto_marcado)
         texto_limpo = limpar_texto(texto_formatado)
-        texto_sem_repeticao = remover_linhas_repetidas(texto_limpo)
+        texto_normalizado = normalizar_nomes(texto_limpo)  # Nova etapa
+        texto_sem_repeticao = remover_linhas_repetidas(texto_normalizado)
         texto_final = ordenar_linhas_alfabeticamente(texto_sem_repeticao)
 
         # Download
