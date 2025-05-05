@@ -71,7 +71,7 @@ def limpar_texto(text):
             continue
             
         # Regra 2: Remove parágrafos com dois pontos
-        if ':' in linha:
+        if re.search(r'[:?!]', linha):
             continue
             
         # Regra 3: Remove parágrafos com parênteses/colchetes/chaves
