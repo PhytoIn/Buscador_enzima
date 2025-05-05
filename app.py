@@ -133,6 +133,23 @@ def normalizar_nomes(text):
         linhas_normalizadas.append(linha)
     
     return '\n'.join(linhas_normalizadas)
+
+def remover_particulas(text):
+    """Remove partículas de ligação e sufixos em nomes com mais de 2 palavras"""
+    particulas = {"DA", "DE", "DO", "DAS", "DOS", "VAN", "JR", "JUNIOR"}
+    linhas_limpas = []
+    
+    for linha in text.split('\n'):
+        palavras = linha.split()
+        
+        # Só aplica regras se houver mais de 2 palavras
+        if len(palavras) > 2:
+            palavras_filtradas = [p for p in palavras if p not in particulas]
+            linha = ' '.join(palavras_filtradas)
+            
+        linhas_limpas.append(linha)
+    
+    return '\n'.join(linhas_limpas)
     
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
@@ -156,8 +173,9 @@ if uploaded_file is not None:
         texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
         texto_formatado = formatar_quebras_paragrafo(texto_marcado)
         texto_limpo = limpar_texto(texto_formatado)
-        texto_normalizado = normalizar_nomes(texto_limpo)  # Nova etapa
-        texto_sem_repeticao = remover_linhas_repetidas(texto_normalizado)
+        texto_normalizado = normalizar_nomes(texto_limpo)
+        texto_sem_particulas = remover_particulas(texto_normalizado)  # Nova etapa
+        texto_sem_repeticao = remover_linhas_repetidas(texto_sem_particulas)
         texto_final = ordenar_linhas_alfabeticamente(texto_sem_repeticao)
 
         # Download
