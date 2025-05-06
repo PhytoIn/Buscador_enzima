@@ -196,33 +196,70 @@ def gerar_combinacoes_grupo2(partes):
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
 
-# Seção para processamento de nomes de candidatos
+# --- NOVA SEÇÃO ADICIONADA AQUI ---
 st.subheader("Processamento de Nomes de Candidatos")
-nomes_candidatos = st.text_area(
-    "Cole os nomes dos candidatos (separados por vírgulas):",
-    help="Exemplo: João Silva Pereira, Maria Costa Jr, Antônio D'Ávila"
+candidates_input = st.text_area(
+    "Cole os nomes completos dos candidatos (separados por vírgulas):",
+    placeholder="Ex: João Silva Pereira, Maria Oliveira, Carlos Alberto Jr.",
+    height=100
 )
 
-if nomes_candidatos:
-    st.subheader("Resultado do Processamento de Nomes")
-    nomes = [nome.strip() for nome in nomes_candidatos.split(',')]
+if candidates_input:
+    st.subheader("Combinações Geradas")
+    names = [name.strip() for name in candidates_input.split(',') if name.strip()]
     
-    for nome_original in nomes:
-        nome_processado = processar_nome(nome_original)
-        partes = nome_processado.split()
+    for name in names:
+        # Processar cada nome
+        processed_name = unicodedata.normalize('NFKD', name)
+        processed_name = processed_name.encode('ASCII', 'ignore').decode('ASCII').upper()
+        processed_name = re.sub(r"[,.'\-]", ' ', processed_name)
+        processed_name = re.sub(r'\s+', ' ', processed_name).strip()
         
-        if not partes:
+        # Remover partículas
+        particles = {"DA", "DE", "DO", "DAS", "DOS", "VAN", "JR", "JUNIOR"}
+        parts = [p for p in processed_name.split() if p not in particles]
+        processed_name = ' '.join(parts)
+        
+        if not parts:
             continue
-        
-        st.write(f"**Nome original:** {nome_original}")
-        st.write(f"**Nome processado:** {nome_processado}")
+            
+        st.write(f"**Nome original:** {name}")
+        st.write(f"**Nome processado:** {processed_name}")
         
         # Gerar combinações
-        grupo1 = gerar_combinacoes_grupo1(partes)
-        grupo2 = gerar_combinacoes_grupo2(partes)
+        combinations = []
         
-        st.write("**Combinações Geradas:**")
-        for combo in grupo1 + grupo2:
+        # Grupo 1: Nomes do meio abreviados
+        if len(parts) >= 2:
+            # NOME1 N2 N3 NOME4 (todos do meio abreviados)
+            abbreviated_middle = [p[0] for p in parts[1:-1]] if len(parts) > 2 else []
+            combo = f"{parts[0]} {' '.join(abbreviated_middle)} {parts[-1]}"
+            combinations.append(combo)
+            
+            # Outras variações com um nome do meio por vez abreviado
+            for i in range(1, len(parts)-1):
+                temp = parts.copy()
+                temp[i] = temp[i][0]
+                combinations.append(' '.join(temp))
+        
+        # Grupo 2: Permutações com último nome na frente
+        if len(parts) >= 2:
+            last_name = parts[-1]
+            other_names = parts[:-1]
+            
+            # NOME4 NOME1 NOME2 NOME3
+            combinations.append(f"{last_name} {' '.join(other_names)}")
+            
+            # Variações com abreviações
+            for i in range(len(other_names)):
+                for combo in itertools.permutations(other_names, len(other_names))):
+                    temp = list(combo)
+                    temp[i] = temp[i][0]
+                    combinations.append(f"{last_name} {' '.join(temp)}")
+        
+        # Mostrar combinações
+        st.write("**Combinações:**")
+        for combo in sorted(set(combinations)):  # Remover duplicados
             st.write(f"- {combo}")
         
         st.write("---")
