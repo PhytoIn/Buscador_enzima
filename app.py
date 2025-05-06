@@ -3,6 +3,7 @@ import fitz  # PyMuPDF
 import re
 import io
 import unicodedata
+import itertools
 
 def marcar_inicio_nome(text):
     """Marca o início dos nomes com '@nome' após numeração (ex: '1. ')"""
@@ -65,30 +66,24 @@ def limpar_texto(text):
     linhas_limpas = []
     
     for linha in text.split('\n'):
-        original = linha  # Guarda a versão original para verificação de comprimento
+        original = linha
         linha = linha.strip()
         
-        # Regra 0: Remove parágrafos com 60+ caracteres (antes do strip)
         if len(original) >= 60:
             continue
             
-        # Regra 1: Remove parágrafos com números
         if re.search(r'\d', linha):
             continue
             
-        # Regra 2: Remove parágrafos com pontuação
         if re.search(r'[:?!]', linha):
             continue
             
-        # Regra 3: Remove parágrafos com parênteses/colchetes
         if re.search(r'[\(\)\{\}\[\]]', linha):
             continue
             
-        # Regra 4: Remove parágrafos com uma única palavra
         if len(linha.split()) == 1:
             continue
             
-        # Regra 5: Remove espaços/hífens no final
         linha = re.sub(r'[-\s]+$', '', linha)
             
         linhas_limpas.append(linha)
@@ -114,22 +109,15 @@ def ordenar_linhas_alfabeticamente(text):
     linhas_ordenadas = sorted(linhas, key=lambda x: x.lower())
     return '\n'.join(linhas_ordenadas)
 
-
 def normalizar_nomes(text):
     """Padroniza nomes removendo acentos, caracteres especiais e espaços extras"""
     linhas_normalizadas = []
     
     for linha in text.split('\n'):
-        # Passo 1: Remover acentos e normalizar caracteres Unicode
         linha = unicodedata.normalize('NFKD', linha)
-        linha = linha.encode('ASCII', 'ignore').decode('ASCII')  # Remove acentos
-        
-        # Passo 2: Remover caracteres especiais
-        linha = re.sub(r"[,.'\-]", ' ', linha)  # Hífens são removidos
-        
-        # Passo 3: Normalizar espaços
+        linha = linha.encode('ASCII', 'ignore').decode('ASCII')
+        linha = re.sub(r"[,.'\-]", ' ', linha)
         linha = re.sub(r'\s+', ' ', linha).strip().upper()
-        
         linhas_normalizadas.append(linha)
     
     return '\n'.join(linhas_normalizadas)
@@ -141,58 +129,138 @@ def remover_particulas(text):
     
     for linha in text.split('\n'):
         palavras = linha.split()
-        
-        # Só aplica regras se houver mais de 2 palavras
         if len(palavras) > 2:
-            palavras_filtradas = [p for p in palavras if p not in particulas]
-            linha = ' '.join(palavras_filtradas)
-            
-        linhas_limpas.append(linha)
+            palavras = [p for p in palavras if p not in particulas]
+        linhas_limpas.append(' '.join(palavras))
     
     return '\n'.join(linhas_limpas)
+
+def processar_nome(nome):
+    """Processa um único nome: normaliza e remove partículas"""
+    nome = unicodedata.normalize('NFKD', nome)
+    nome = nome.encode('ASCII', 'ignore').decode('ASCII').upper()
+    nome = re.sub(r"[,.'\-]", ' ', nome)
+    nome = re.sub(r'\s+', ' ', nome).strip()
     
+    partes = nome.split()
+    if len(partes) > 2:
+        particulas = {"DA", "DE", "DO", "DAS", "DOS", "VAN", "JR", "JUNIOR"}
+        partes = [p for p in partes if p not in particulas]
+    return ' '.join(partes)
+
+def gerar_combinacoes_grupo1(partes):
+    """Gera combinações do primeiro grupo de padrões"""
+    combinacoes = []
+    n = len(partes)
+    
+    if n >= 4:
+        for i in range(1, n-2):
+            nova_parte = [partes[0]]
+            for j in range(1, n-1):
+                if j == i:
+                    nova_parte.append(partes[j][0])
+                else:
+                    nova_parte.append(partes[j])
+            nova_parte.append(partes[-1])
+            combinacoes.append(' '.join(nova_parte))
+    
+    if n >= 3:
+        abreviados_meio = [p[0] for p in partes[1:-1]]
+        combinacoes.append(f"{partes[0]} {' '.join(abreviados_meio)} {partes[-1]}")
+    
+    return combinacoes
+
+def gerar_combinacoes_grupo2(partes):
+    """Gera combinações do segundo grupo de padrões"""
+    combinacoes = []
+    n = len(partes)
+    
+    if n >= 2:
+        ultimo_nome = partes[-1]
+        outros_nomes = partes[:-1]
+        
+        for r in range(1, len(outros_nomes)+1):
+            for combinacao in itertools.permutations(outros_nomes, r):
+                for mask in itertools.product([True, False], repeat=r):
+                    partes_abreviadas = []
+                    for i, parte in enumerate(combinacao):
+                        if mask[i]:
+                            partes_abreviadas.append(parte[0])
+                        else:
+                            partes_abreviadas.append(parte)
+                    combinacoes.append(f"{ultimo_nome} {' '.join(partes_abreviadas)}")
+    
+    return combinacoes
+
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
 st.title("📄 Extrair Texto de Arquivo PDF")
-st.subheader("Faça upload de um PDF e baixe o texto formatado")
 
+# Seção para processamento de nomes de candidatos
+st.subheader("Processamento de Nomes de Candidatos")
+nomes_candidatos = st.text_area(
+    "Cole os nomes dos candidatos (separados por vírgulas):",
+    help="Exemplo: João Silva Pereira, Maria Costa Jr, Antônio D'Ávila"
+)
+
+if nomes_candidatos:
+    st.subheader("Resultado do Processamento de Nomes")
+    nomes = [nome.strip() for nome in nomes_candidatos.split(',')]
+    
+    for nome_original in nomes:
+        nome_processado = processar_nome(nome_original)
+        partes = nome_processado.split()
+        
+        if not partes:
+            continue
+        
+        st.write(f"**Nome original:** {nome_original}")
+        st.write(f"**Nome processado:** {nome_processado}")
+        
+        # Gerar combinações
+        grupo1 = gerar_combinacoes_grupo1(partes)
+        grupo2 = gerar_combinacoes_grupo2(partes)
+        
+        st.write("**Combinações Geradas:**")
+        for combo in grupo1 + grupo2:
+            st.write(f"- {combo}")
+        
+        st.write("---")
+
+# Seção original de processamento de PDF
+st.subheader("Processamento de Arquivos PDF")
 uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
 
-# Atualização no fluxo de processamento
 if uploaded_file is not None:
-    st.info("Processando PDF...")
-    
+    # Processamento do PDF existente...
+    # ... (mantido igual ao código original)
+
     try:
-        # Extração do texto
         doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         raw_text = "".join(page.get_text() + "\n" for page in doc)
         cleaned_text = re.sub(r'\s+', ' ', raw_text)
 
-        # Processamento em 7 etapas
         texto_marcado = marcar_inicio_nome(cleaned_text)
         texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
         texto_formatado = formatar_quebras_paragrafo(texto_marcado)
         texto_limpo = limpar_texto(texto_formatado)
         texto_normalizado = normalizar_nomes(texto_limpo)
-        texto_sem_particulas = remover_particulas(texto_normalizado)  # Nova etapa
+        texto_sem_particulas = remover_particulas(texto_normalizado)
         texto_sem_repeticao = remover_linhas_repetidas(texto_sem_particulas)
         texto_final = ordenar_linhas_alfabeticamente(texto_sem_repeticao)
 
-        # Download
         txt_buffer = io.BytesIO(texto_final.encode('utf-8'))
         st.success("Pronto para download!")
         st.download_button(
             label="⬇️ Baixar texto formatado",
             data=txt_buffer,
-            file_name="nomes_ordenados.txt",  # Nome mais descritivo
+            file_name="nomes_ordenados.txt",
             mime="text/plain"
         )
 
-        # Visualização
-        with st.expander("🔍 Visualizar lista de nomes (ordenada alfabeticamente)"):
+        with st.expander("🔍 Visualizar lista de nomes"):
             st.text(texto_final[:2000] + ("..." if len(texto_final) > 2000 else ""))
 
-        # Estatísticas
         num_nomes = len(texto_final.split('\n'))
         st.info(f"✅ Processamento concluído! Total de nomes únicos: {num_nomes}")
 
