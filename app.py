@@ -252,7 +252,7 @@ if candidates_input:
             
             # Variações com abreviações
             for i in range(len(other_names)):
-                for combo in itertools.permutations(other_names, len(other_names))):
+                for combo in itertools.permutations(other_names, len(other_names)):
                     temp = list(combo)
                     temp[i] = temp[i][0]
                     combinations.append(f"{last_name} {' '.join(temp)}")
