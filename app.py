@@ -148,49 +148,66 @@ def processar_nome(nome):
         partes = [p for p in partes if p not in particulas]
     return ' '.join(partes)
 
-def gerar_combinacoes_grupo1(partes):
-    """Gera combinações do primeiro grupo de padrões"""
+def gerar_combinacoes_nomes(partes):
+    """Nova função de geração de combinações seguindo as especificações"""
     combinacoes = []
     n = len(partes)
     
-    if n >= 4:
-        for i in range(1, n-2):
-            nova_parte = [partes[0]]
-            for j in range(1, n-1):
-                if j == i:
-                    nova_parte.append(partes[j][0])
-                else:
-                    nova_parte.append(partes[j])
-            nova_parte.append(partes[-1])
-            combinacoes.append(' '.join(nova_parte))
-    
-    if n >= 3:
-        abreviados_meio = [p[0] for p in partes[1:-1]]
-        combinacoes.append(f"{partes[0]} {' '.join(abreviados_meio)} {partes[-1]}")
-    
-    return combinacoes
-
-def gerar_combinacoes_grupo2(partes):
-    """Gera combinações do segundo grupo de padrões"""
-    combinacoes = []
-    n = len(partes)
-    
+    # Grupo 1: Combinações não abreviadas
     if n >= 2:
-        ultimo_nome = partes[-1]
-        outros_nomes = partes[:-1]
+        combinacoes.append(' '.join(partes))  # Ordem original
         
-        for r in range(1, len(outros_nomes)+1):
-            for combinacao in itertools.permutations(outros_nomes, r):
-                for mask in itertools.product([True, False], repeat=r):
-                    partes_abreviadas = []
-                    for i, parte in enumerate(combinacao):
-                        if mask[i]:
-                            partes_abreviadas.append(parte[0])
-                        else:
-                            partes_abreviadas.append(parte)
-                    combinacoes.append(f"{ultimo_nome} {' '.join(partes_abreviadas)}")
-    
-    return combinacoes
+        if n >= 3:
+            combinacoes.append(f"{partes[-1]} {' '.join(partes[:-1])}")  # Último primeiro
+            if n >= 4:
+                combinacoes.append(f"{' '.join(partes[-2:])} {' '.join(partes[:-2])}")  # Dois últimos primeiro
+
+    # Grupo 2: Abreviações progressivas do meio
+    if n >= 3:
+        # Caso especial para 3 palavras
+        if n == 3:
+            combinacoes.append(f"{partes[0]} {partes[1][0]} {partes[2]}")
+        
+        # Para 4+ palavras
+        else:
+            for qtd in range(1, n-1):
+                for inicio in range(1, (n-1) - qtd + 1):
+                    temp = partes.copy()
+                    for i in range(inicio, inicio + qtd):
+                        temp[i] = temp[i][0]
+                    combinacoes.append(' '.join(temp))
+
+    # Grupo 3: Último nome primeiro com abreviações progressivas
+    if n >= 2:
+        ultimo = [partes[-1]]
+        demais = partes[:-1]
+        
+        for qtd in range(1, len(demais)+1):
+            for inicio in range(len(demais) - qtd + 1):
+                temp = []
+                for i, p in enumerate(demais):
+                    if inicio <= i < inicio + qtd:
+                        temp.append(p[0])
+                    else:
+                        temp.append(p)
+                combinacoes.append(f"{' '.join(ultimo)} {' '.join(temp)}")
+
+    # Grupo 4: Dois últimos primeiro com abreviações
+    if n >= 4:
+        dois_ultimos = partes[-2:]
+        demais = partes[:-2]
+        
+        for qtd in range(1, len(demais)+1):
+            for inicio in range(len(demais) - qtd + 1):
+                temp = []
+                for i, p in enumerate(demais):
+                    if inicio <= i < inicio + qtd:
+                        temp.append(p[0])
+                    else:
+                        temp.append(p)
+                combinacoes.append(f"{' '.join(dois_ultimos)} {' '.join(temp)}")
+
+    return list(set(combinacoes))  # Remove duplicados
 
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
@@ -227,39 +244,11 @@ if candidates_input:
         st.write(f"**Nome processado:** {processed_name}")
         
         # Gerar combinações
-        combinations = []
-        
-        # Grupo 1: Nomes do meio abreviados
-        if len(parts) >= 2:
-            # NOME1 N2 N3 NOME4 (todos do meio abreviados)
-            abbreviated_middle = [p[0] for p in parts[1:-1]] if len(parts) > 2 else []
-            combo = f"{parts[0]} {' '.join(abbreviated_middle)} {parts[-1]}"
-            combinations.append(combo)
-            
-            # Outras variações com um nome do meio por vez abreviado
-            for i in range(1, len(parts)-1):
-                temp = parts.copy()
-                temp[i] = temp[i][0]
-                combinations.append(' '.join(temp))
-        
-        # Grupo 2: Permutações com último nome na frente
-        if len(parts) >= 2:
-            last_name = parts[-1]
-            other_names = parts[:-1]
-            
-            # NOME4 NOME1 NOME2 NOME3
-            combinations.append(f"{last_name} {' '.join(other_names)}")
-            
-            # Variações com abreviações
-            for i in range(len(other_names)):
-                for combo in itertools.permutations(other_names, len(other_names)):
-                    temp = list(combo)
-                    temp[i] = temp[i][0]
-                    combinations.append(f"{last_name} {' '.join(temp)}")
+        combinations = gerar_combinacoes_nomes(parts)  # parts já é a lista processada
         
         # Mostrar combinações
         st.write("**Combinações:**")
-        for combo in sorted(set(combinations)):  # Remover duplicados
+        for combo in sorted(combinations):
             st.write(f"- {combo}")
         
         st.write("---")
