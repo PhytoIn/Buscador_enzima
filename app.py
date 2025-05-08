@@ -200,7 +200,8 @@ st.subheader("Dados para Comparação")
 candidates_input = st.text_area(
     "Insira os nomes completos dos candidatos (separados por vírgula):",
     placeholder="Ex: Maria Silva Oliveira, José Carlos Pereira",
-    height=100
+    height=100,
+    key="candidates_input"
 )
 
 precision = st.slider(
@@ -208,17 +209,21 @@ precision = st.slider(
     min_value=50,
     max_value=100,
     value=100,
-    help="100% exige correspondência exata entre os nomes"
+    help="100% exige correspondência exata entre os nomes",
+    key="precision_slider"
 )
 
-uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf")
+uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf", key="pdf_uploader")
 
-# BOTÃO ADICIONADO AQUI
-if uploaded_file:
-    buscar = st.button("Buscar Nomes")
+# Variável para controlar o estado do botão
+buscar_nomes = False
+
+# Mostra o botão apenas se um PDF foi carregado
+if uploaded_file is not None:
+    buscar_nomes = st.button("Buscar Nomes", key="buscar_button")
 
 # Processamento só ocorre após clicar no botão
-if uploaded_file is not None and candidates_input and buscar:  # Adicionei a condição 'and buscar'
+if uploaded_file is not None and candidates_input and buscar_nomes:
     try:
         # Processar nomes dos candidatos
         nomes_candidatos = [nome.strip() for nome in candidates_input.split(',') if nome.strip()]
@@ -233,8 +238,8 @@ if uploaded_file is not None and candidates_input and buscar:  # Adicionei a con
                 'combinations': combinacoes
             })
 
-        # Processar PDF
-        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        # Processar PDF (usando getvalue() para reler o arquivo)
+        doc = fitz.open(stream=uploaded_file.getvalue(), filetype="pdf")
         raw_text = "".join(page.get_text() + "\n" for page in doc)
         cleaned_text = re.sub(r'\s+', ' ', raw_text)
 
@@ -291,5 +296,5 @@ if uploaded_file is not None and candidates_input and buscar:  # Adicionei a con
 
     except Exception as e:
         st.error(f"Erro durante o processamento: {str(e)}")
-elif uploaded_file and not candidates_input:
+elif uploaded_file is not None and not candidates_input:
     st.warning("Por favor, insira os nomes dos candidatos para comparação.")
