@@ -149,34 +149,25 @@ def processar_nome(nome):
     return ' '.join(partes)
 
 def gerar_combinacoes_nomes(partes):
-    """Função revisada para gerar todas as combinações especificadas"""
+    """Função corrigida para evitar combinação extra em nomes com 3 palavras"""
     combinacoes = []
     n = len(partes)
     
     # Grupo 1: Combinações não abreviadas
     if n >= 2:
-        # Ordem original
-        combinacoes.append(' '.join(partes))
+        combinacoes.append(' '.join(partes))  # Ordem original
+        combinacoes.append(f"{partes[-1]} {' '.join(partes[:-1])}")  # Último primeiro
         
-        # Último nome primeiro (para todos casos com 2+ palavras)
-        combinacoes.append(f"{partes[-1]} {' '.join(partes[:-1])}")
-        
-        # Penúltimo e último primeiro (para 3+ palavras)
         if n >= 3:
-            combinacoes.append(f"{' '.join(partes[-2:])} {' '.join(partes[:-2])}")
+            combinacoes.append(f"{' '.join(partes[-2:])} {' '.join(partes[:-2])}")  # Dois últimos primeiro
 
     # Grupo 2: Abreviações progressivas do meio
     if n >= 3:
-        # Caso especial para 3 palavras
         if n == 3:
-            # NOME1 N2 NOME3
+            # Apenas a combinação NOME1 N2 NOME3
             combinacoes.append(f"{partes[0]} {partes[1][0]} {partes[2]}")
-            
-            # NOME3 NOME1 N2
-            combinacoes.append(f"{' '.join(partes[-2:])} {partes[0]} {partes[1][0]}")
         
-        # Para 4+ palavras
-        else:
+        else:  # Para 4+ palavras
             for qtd in range(1, n-1):
                 for inicio in range(1, (n-1) - qtd + 1):
                     temp = partes.copy()
@@ -189,7 +180,6 @@ def gerar_combinacoes_nomes(partes):
         ultimo = [partes[-1]]
         demais = partes[:-1]
         
-        # Todas as combinações de abreviação progressiva
         for qtd in range(1, len(demais)+1):
             for inicio in range(len(demais) - qtd + 1):
                 temp = []
@@ -198,27 +188,31 @@ def gerar_combinacoes_nomes(partes):
                         temp.append(p[0])
                     else:
                         temp.append(p)
-                # Adiciona versão com último nome primeiro
                 combinacoes.append(f"{' '.join(ultimo)} {' '.join(temp)}")
 
-    # Grupo 4: Dois últimos primeiro com abreviações (para 3+ palavras)
+    # Grupo 4: Dois últimos primeiro com abreviações (corrigido)
     if n >= 3:
         dois_ultimos = partes[-2:]
         demais = partes[:-2]
         
         if demais:
-            for qtd in range(1, len(demais)+1):
-                for inicio in range(len(demais) - qtd + 1):
-                    temp = []
-                    for i, p in enumerate(demais):
-                        if inicio <= i < inicio + qtd:
-                            temp.append(p[0])
-                        else:
-                            temp.append(p)
-                    # Adiciona versão com dois últimos primeiro
-                    combinacoes.append(f"{' '.join(dois_ultimos)} {' '.join(temp)}")
+            # Para 3 palavras: só há 1 nome para abreviar
+            if n == 3:
+                combinacoes.append(f"{' '.join(dois_ultimos)} {demais[0][0]}")  # Apenas abreviação
+                combinacoes.append(f"{' '.join(dois_ultimos)} {demais[0]}")     # Sem abreviação
+            
+            else:  # 4+ palavras
+                for qtd in range(1, len(demais)+1):
+                    for inicio in range(len(demais) - qtd + 1):
+                        temp = []
+                        for i, p in enumerate(demais):
+                            if inicio <= i < inicio + qtd:
+                                temp.append(p[0])
+                            else:
+                                temp.append(p)
+                        combinacoes.append(f"{' '.join(dois_ultimos)} {' '.join(temp)}")
 
-    return list(set(combinacoes))  # Remove duplicados
+    return list(set(combinacoes))
 
 # Interface Streamlit
 st.set_page_config(page_title="Extrair Texto de PDF", layout="centered")
