@@ -211,8 +211,10 @@ def get_authors_from_doi(doi):
 st.set_page_config(page_title="Buscador de Conflitos de Interesse", layout="centered")
 st.title("Buscador de Conflitos de Interesse")
 st.write("Versão 2.0 - 08/05/2025")
-st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP), e-mail: raspereira@usp.br")
-st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas.")
+st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP)",
+         "e-mail: raspereira@usp.br")
+st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas.",
+        "Confira sempre o resultado. Este aplicativo pode cometer erros ou detectar homônimos.")
 
 # Seção de entrada de dados
 st.subheader("Nomes para Comparação")
@@ -231,7 +233,7 @@ precision = st.slider(
     help="100% exige correspondência exata entre os nomes",
     key="precision_slider"
 )
-st.write("Limiares mais elevados tornam a busca mais precisa. Similaridades abaixo de 85% aumentam o risco de falsos positivos.")
+st.write("Limiares mais elevados tornam a busca mais precisa. Limiares abaixo de 85% aumentam o risco de falsos positivos.")
 
 # Seleção de método de comparação
 metodo_comparacao = st.radio(
@@ -244,6 +246,15 @@ uploaded_file = None
 doi_input = None
 
 if metodo_comparacao == 'Comparar ao PDF de um currículo Lattes':
+    with st.expander("Como baixar o arquivo XML do Lattes"):
+        st.markdown("""
+        1. Acesse o currículo Lattes da pessoa no site do CNPq
+        2. Role a tela até o final do currículo
+        3. Clique no botão azul 'Imprimir Currículo'
+        4. Na tela de impressão, escolha 'Salvar como PDF'
+        5. Faça upload do PDF nesta aplicação
+        """)
+        
     uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf", key="pdf_uploader")
 else:
     doi_input = st.text_input("Insira o DOI da publicação (ex: 10.1234/abc.2021.11.002):", key="doi_input")
