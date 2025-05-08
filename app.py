@@ -211,10 +211,10 @@ def get_authors_from_doi(doi):
 st.set_page_config(page_title="Buscador de Conflitos de Interesse", layout="centered")
 st.title("Buscador de Conflitos de Interesse")
 st.write("Versão 2.0 - 08/05/2025")
-st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP)",
-         "e-mail: raspereira@usp.br")
-st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas.",
-        "Confira sempre o resultado. Este aplicativo pode cometer erros ou detectar homônimos.")
+st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP) <br>e-mail: raspereira@usp.br",
+         unsafe_allow_html=True)
+st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas. <br>Confira sempre o resultado. Este aplicativo pode cometer erros ou detectar homônimos.",
+         unsafe_allow_html=True)
 
 # Seção de entrada de dados
 st.subheader("Nomes para Comparação")
@@ -252,7 +252,7 @@ if metodo_comparacao == 'Comparar ao PDF de um currículo Lattes':
         2. Role a tela até o final do currículo
         3. Clique no botão azul 'Imprimir Currículo'
         4. Na tela de impressão, escolha 'Salvar como PDF'
-        5. Faça upload do PDF nesta aplicação
+        5. Faça upload do PDF neste aplicativo
         """)
         
     uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf", key="pdf_uploader")
