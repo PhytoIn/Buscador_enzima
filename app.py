@@ -4,6 +4,7 @@ import re
 import unicodedata
 import itertools
 from difflib import SequenceMatcher
+import requests
 
 def marcar_inicio_nome(text):
     """Marca o início dos nomes com '@nome' após numeração (ex: '1. ')"""
@@ -191,9 +192,27 @@ def gerar_combinacoes_nomes(partes):
 
     return list(set(combinacoes))
 
+# Função modificada para compatibilidade
+def get_authors_from_doi(doi):
+    url = f"https://api.crossref.org/works/{doi}"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.ok:
+            data = response.json()
+            author_data = data['message'].get('author', [])
+            author_names = ["{} {}".format(author.get('given', ''), author.get('family', '')).strip() 
+                          for author in author_data]
+            return author_names, None
+        return None, None
+    except Exception as e:
+        return None, None
+
 # Interface Streamlit
 st.set_page_config(page_title="Buscador de Conflitos de Interesse", layout="centered")
 st.title("Buscador de Conflitos de Interesse")
+st.write("Versão 2.0 - 08/05/2025")
+st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP), e-mail: raspereira@usp.br")
+st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas.")
 
 # Seção de entrada de dados
 st.subheader("Nomes para Comparação")
@@ -213,17 +232,31 @@ precision = st.slider(
     key="precision_slider"
 )
 
-uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf", key="pdf_uploader")
+# Seleção de método de comparação
+metodo_comparacao = st.radio(
+    "Método de comparação:",
+    options=['Comparar ao PDF de um currículo Lattes', 'Comparar à lista de autores de uma publicação'],
+    index=0
+)
 
-# Variável para controlar o estado do botão
+uploaded_file = None
+doi_input = None
+
+if metodo_comparacao == 'Comparar ao PDF de um currículo Lattes':
+    uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf", key="pdf_uploader")
+else:
+    doi_input = st.text_input("Insira o DOI da publicação (ex: 10.1234/abc.2021.11.002):", key="doi_input")
+
+# Controle do botão de busca
 buscar_nomes = False
+if ((metodo_comparacao == 'Comparar ao PDF de um currículo Lattes' and uploaded_file is not None) or
+    (metodo_comparacao == 'Comparar à lista de autores de uma publicação' and doi_input)):
+    
+    if candidates_input.strip():
+        buscar_nomes = st.button("Buscar Nomes", key="buscar_button")
 
-# Mostra o botão apenas se um PDF foi carregado
-if uploaded_file is not None:
-    buscar_nomes = st.button("Buscar Nomes", key="buscar_button")
-
-# Processamento só ocorre após clicar no botão
-if uploaded_file is not None and candidates_input and buscar_nomes:
+# Processamento principal
+if buscar_nomes:
     try:
         # Processar nomes dos candidatos
         nomes_candidatos = [nome.strip() for nome in candidates_input.split(',') if nome.strip()]
@@ -238,21 +271,36 @@ if uploaded_file is not None and candidates_input and buscar_nomes:
                 'combinations': combinacoes
             })
 
-        # Processar PDF (usando getvalue() para reler o arquivo)
-        doc = fitz.open(stream=uploaded_file.getvalue(), filetype="pdf")
-        raw_text = "".join(page.get_text() + "\n" for page in doc)
-        cleaned_text = re.sub(r'\s+', ' ', raw_text)
+        # Obter nomes para comparação
+        nomes_comparacao = []
+        
+        if metodo_comparacao == 'Comparar ao PDF de um currículo Lattes':
+            # Processar PDF
+            doc = fitz.open(stream=uploaded_file.getvalue(), filetype="pdf")
+            raw_text = "".join(page.get_text() + "\n" for page in doc)
+            cleaned_text = re.sub(r'\s+', ' ', raw_text)
 
-        texto_marcado = marcar_inicio_nome(cleaned_text)
-        texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
-        texto_formatado = formatar_quebras_paragrafo(texto_marcado)
-        texto_limpo = limpar_texto(texto_formatado)
-        texto_normalizado = normalizar_nomes(texto_limpo)
-        texto_sem_particulas = remover_particulas(texto_normalizado)
-        texto_final = texto_sem_particulas
+            texto_marcado = marcar_inicio_nome(cleaned_text)
+            texto_marcado = marcar_fim_nome_apos_inicio(texto_marcado)
+            texto_formatado = formatar_quebras_paragrafo(texto_marcado)
+            texto_limpo = limpar_texto(texto_formatado)
+            texto_normalizado = normalizar_nomes(texto_limpo)
+            texto_sem_particulas = remover_particulas(texto_normalizado)
+            texto_final = texto_sem_particulas
 
-        # Extrair nomes do PDF
-        nomes_pdf = [linha.strip() for linha in texto_final.split('\n') if linha.strip()]
+            nomes_comparacao = [linha.strip() for linha in texto_final.split('\n') if linha.strip()]
+            
+        else:
+            # Processar DOI
+            autores, _ = get_authors_from_doi(doi_input.strip())
+            if not autores:
+                st.error("DOI inválido ou não encontrado. Verifique o número e tente novamente.")
+                return
+                
+            texto_autores = '\n'.join(autores)
+            texto_normalizado = normalizar_nomes(texto_autores)
+            texto_sem_particulas = remover_particulas(texto_normalizado)
+            nomes_comparacao = [linha.strip() for linha in texto_sem_particulas.split('\n') if linha.strip()]
 
         # Realizar comparações
         threshold = precision / 100.0
@@ -262,10 +310,10 @@ if uploaded_file is not None and candidates_input and buscar_nomes:
             encontrados = []
             
             for combinacao in candidato['combinations']:
-                for nome_pdf in nomes_pdf:
-                    similaridade = SequenceMatcher(None, combinacao, nome_pdf).ratio()
+                for nome in nomes_comparacao:
+                    similaridade = SequenceMatcher(None, combinacao, nome).ratio()
                     if similaridade >= threshold:
-                        encontrados.append(nome_pdf)
+                        encontrados.append(nome)
             
             # Remover duplicatas mantendo a ordem
             vistos = set()
@@ -293,6 +341,9 @@ if uploaded_file is not None and candidates_input and buscar_nomes:
                 st.write("---")
         else:
             st.write("**Nenhuma correspondência encontrada**")
+
+    except Exception as e:
+        st.error(f"Erro durante o processamento: {str(e)}")
 
     except Exception as e:
         st.error(f"Erro durante o processamento: {str(e)}")
