@@ -265,7 +265,7 @@ if ((metodo_comparacao == 'Comparar ao PDF de um currículo Lattes' and uploaded
     (metodo_comparacao == 'Comparar à lista de autores de uma publicação' and doi_input)):
     
     if candidates_input.strip():
-        buscar_nomes = st.button("Buscar Nomes", key="buscar_button")
+        buscar_nomes = st.button("Comparar Nomes", key="buscar_button")
 
 # Processamento principal
 if buscar_nomes:
