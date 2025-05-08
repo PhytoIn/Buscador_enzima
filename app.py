@@ -3,7 +3,7 @@ import fitz  # PyMuPDF
 import re
 import unicodedata
 import itertools
-from difflib import SequenceMatcher
+import SequenceMatcher
 
 def marcar_inicio_nome(text):
     """Marca o início dos nomes com '@nome' após numeração (ex: '1. ')"""
