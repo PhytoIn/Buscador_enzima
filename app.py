@@ -222,7 +222,7 @@ st.title("📄 Extrair Texto de Arquivo PDF")
 st.subheader("Processamento de Nomes de Candidatos")
 candidates_input = st.text_area(
     "Cole os nomes completos dos candidatos (separados por vírgulas):",
-    placeholder="Ex: João Silva Pereira, Maria Oliveira, Carlos Alberto Jr.",
+    placeholder="Ex: João Silva Pereira, Maria Oliveira, Carlos Alberto Motta Jr.",
     height=100
 )
 
