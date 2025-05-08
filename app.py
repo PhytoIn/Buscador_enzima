@@ -231,6 +231,7 @@ precision = st.slider(
     help="100% exige correspondência exata entre os nomes",
     key="precision_slider"
 )
+st.write("Limiares mais elevados tornam a busca mais precisa. Similaridades abaixo de 85% aumentam o risco de falsos positivos.")
 
 # Seleção de método de comparação
 metodo_comparacao = st.radio(
