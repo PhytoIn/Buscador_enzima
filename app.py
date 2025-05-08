@@ -292,7 +292,7 @@ if uploaded_file is not None and candidates_input and buscar_nomes:
                     st.write(encontrado)
                 st.write("---")
         else:
-            st.write("**Nenhum nome encontrado**")
+            st.write("**Nenhuma correspondência encontrada**")
 
     except Exception as e:
         st.error(f"Erro durante o processamento: {str(e)}")
