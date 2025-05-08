@@ -295,7 +295,7 @@ if buscar_nomes:
             autores, _ = get_authors_from_doi(doi_input.strip())
             if not autores:
                 st.error("DOI inválido ou não encontrado. Verifique o número e tente novamente.")
-                return
+                st.stop()  # Corrigido
                 
             texto_autores = '\n'.join(autores)
             texto_normalizado = normalizar_nomes(texto_autores)
