@@ -213,7 +213,7 @@ st.title("Buscador de Conflitos de Interesse")
 st.write("Versão 2.0 - 08/05/2025")
 st.write("Autor: Rodrigo A. S. Pereira (Faculdade de Filosofia, Ciências e Letras de Ribeirão Preto, USP) <br>e-mail: raspereira@usp.br",
          unsafe_allow_html=True)
-st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e os nomes extraídos de colaborações acadêmicas. <br>Confira sempre o resultado. Este aplicativo pode cometer erros ou detectar homônimos.",
+st.write("Este programa realiza a comparação entre uma lista de nomes (por exemplo, candidatos a um concurso) e nomes extraídos de colaborações acadêmicas. <br>Confira sempre o resultado. Este aplicativo pode cometer erros ou detectar homônimos.",
          unsafe_allow_html=True)
 
 # Seção de entrada de dados
@@ -246,7 +246,7 @@ uploaded_file = None
 doi_input = None
 
 if metodo_comparacao == 'Comparar ao PDF de um currículo Lattes':
-    with st.expander("Como baixar o arquivo XML do Lattes"):
+    with st.expander("Como baixar o arquivo PDF do Lattes"):
         st.markdown("""
         1. Acesse o currículo Lattes da pessoa no site do CNPq
         2. Role a tela até o final do currículo
