@@ -342,10 +342,7 @@ if buscar_nomes:
         else:
             st.write("**Nenhuma correspondência encontrada**")
 
-    except Exception as e:
-        st.error(f"Erro durante o processamento: {str(e)}")
-
-    except Exception as e:
+       except Exception as e:
         st.error(f"Erro durante o processamento: {str(e)}")
 elif uploaded_file is not None and not candidates_input:
     st.warning("Por favor, insira os nomes dos candidatos para comparação.")
