@@ -192,11 +192,11 @@ def gerar_combinacoes_nomes(partes):
     return list(set(combinacoes))
 
 # Interface Streamlit
-st.set_page_config(page_title="Comparador de Nomes em PDF", layout="centered")
-st.title("🔍 Comparador de Nomes em PDF")
+st.set_page_config(page_title="Buscador de Conflitos de Interesse", layout="centered")
+st.title("Buscador de Conflitos de Interesse")
 
 # Seção de entrada de dados
-st.subheader("Dados para Comparação")
+st.subheader("Nomes para Comparação")
 candidates_input = st.text_area(
     "Insira os nomes completos dos candidatos (separados por vírgula):",
     placeholder="Ex: Maria Silva Oliveira, José Carlos Pereira",
@@ -208,7 +208,7 @@ precision = st.slider(
     "Nível de precisão na comparação:",
     min_value=50,
     max_value=100,
-    value=100,
+    value=90,
     help="100% exige correspondência exata entre os nomes",
     key="precision_slider"
 )
