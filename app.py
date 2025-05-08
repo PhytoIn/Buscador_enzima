@@ -149,24 +149,31 @@ def processar_nome(nome):
     return ' '.join(partes)
 
 def gerar_combinacoes_nomes(partes):
-    """Nova função de geração de combinações seguindo as especificações"""
+    """Função revisada para gerar todas as combinações especificadas"""
     combinacoes = []
     n = len(partes)
     
     # Grupo 1: Combinações não abreviadas
     if n >= 2:
-        combinacoes.append(' '.join(partes))  # Ordem original
+        # Ordem original
+        combinacoes.append(' '.join(partes))
         
+        # Último nome primeiro (para todos casos com 2+ palavras)
+        combinacoes.append(f"{partes[-1]} {' '.join(partes[:-1])}")
+        
+        # Penúltimo e último primeiro (para 3+ palavras)
         if n >= 3:
-            combinacoes.append(f"{partes[-1]} {' '.join(partes[:-1])}")  # Último primeiro
-            if n >= 4:
-                combinacoes.append(f"{' '.join(partes[-2:])} {' '.join(partes[:-2])}")  # Dois últimos primeiro
+            combinacoes.append(f"{' '.join(partes[-2:])} {' '.join(partes[:-2])}")
 
     # Grupo 2: Abreviações progressivas do meio
     if n >= 3:
         # Caso especial para 3 palavras
         if n == 3:
+            # NOME1 N2 NOME3
             combinacoes.append(f"{partes[0]} {partes[1][0]} {partes[2]}")
+            
+            # NOME3 NOME1 N2
+            combinacoes.append(f"{' '.join(partes[-2:])} {partes[0]} {partes[1][0]}")
         
         # Para 4+ palavras
         else:
@@ -177,11 +184,12 @@ def gerar_combinacoes_nomes(partes):
                         temp[i] = temp[i][0]
                     combinacoes.append(' '.join(temp))
 
-    # Grupo 3: Último nome primeiro com abreviações progressivas
+    # Grupo 3: Último nome primeiro com abreviações
     if n >= 2:
         ultimo = [partes[-1]]
         demais = partes[:-1]
         
+        # Todas as combinações de abreviação progressiva
         for qtd in range(1, len(demais)+1):
             for inicio in range(len(demais) - qtd + 1):
                 temp = []
@@ -190,22 +198,25 @@ def gerar_combinacoes_nomes(partes):
                         temp.append(p[0])
                     else:
                         temp.append(p)
+                # Adiciona versão com último nome primeiro
                 combinacoes.append(f"{' '.join(ultimo)} {' '.join(temp)}")
 
-    # Grupo 4: Dois últimos primeiro com abreviações
-    if n >= 4:
+    # Grupo 4: Dois últimos primeiro com abreviações (para 3+ palavras)
+    if n >= 3:
         dois_ultimos = partes[-2:]
         demais = partes[:-2]
         
-        for qtd in range(1, len(demais)+1):
-            for inicio in range(len(demais) - qtd + 1):
-                temp = []
-                for i, p in enumerate(demais):
-                    if inicio <= i < inicio + qtd:
-                        temp.append(p[0])
-                    else:
-                        temp.append(p)
-                combinacoes.append(f"{' '.join(dois_ultimos)} {' '.join(temp)}")
+        if demais:
+            for qtd in range(1, len(demais)+1):
+                for inicio in range(len(demais) - qtd + 1):
+                    temp = []
+                    for i, p in enumerate(demais):
+                        if inicio <= i < inicio + qtd:
+                            temp.append(p[0])
+                        else:
+                            temp.append(p)
+                    # Adiciona versão com dois últimos primeiro
+                    combinacoes.append(f"{' '.join(dois_ultimos)} {' '.join(temp)}")
 
     return list(set(combinacoes))  # Remove duplicados
 
