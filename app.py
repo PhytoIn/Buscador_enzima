@@ -213,7 +213,12 @@ precision = st.slider(
 
 uploaded_file = st.file_uploader("Carregue o PDF para análise:", type="pdf")
 
-if uploaded_file is not None and candidates_input:
+# BOTÃO ADICIONADO AQUI
+if uploaded_file:
+    buscar = st.button("Buscar Nomes")
+
+# Processamento só ocorre após clicar no botão
+if uploaded_file is not None and candidates_input and buscar:  # Adicionei a condição 'and buscar'
     try:
         # Processar nomes dos candidatos
         nomes_candidatos = [nome.strip() for nome in candidates_input.split(',') if nome.strip()]
